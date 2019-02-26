@@ -1,0 +1,46 @@
+#include <Wire.h>
+
+char abuffer[40];
+boolean receiveFlag = false;
+String userbuffer[2];
+
+int i = 0;
+int a = 0;
+
+String userUsername;
+String userPassword;
+
+void setup() {
+  // put your setup code here, to run once:
+  Wire.begin(1);
+  Wire.onReceive(receiveEvent);
+  Serial.begin(9600);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+
+}
+
+void receiveEvent(int howMany)
+{
+    memset(abuffer, 0, sizeof(abuffer));
+    
+    while (Wire.available())
+    {
+      Wire.readBytes(abuffer, howMany);
+      receiveFlag = true;
+    }
+    String userUsername(abuffer);
+    
+    userbuffer[i] = userUsername;
+    
+    Serial.println(userbuffer[i]);
+    
+    i++;
+   a++;
+
+if(a == 2){
+    Serial.println("Your username is " + userbuffer[0] + " and your password is " + userbuffer[1] + ".");
+}
+}
