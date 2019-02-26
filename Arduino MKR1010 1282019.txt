@@ -1,7 +1,8 @@
 /*
   Name:    LoginThingy.ino
   Created: 1/21/2019 11:35:40 PM
-  Author:  nickw
+  Author:  nickwaUsername aPassword
+  
 */
 
 
@@ -53,7 +54,7 @@ void loop() {
 
   buttonInput();
 
-  if (seqState == !lastSeqState)
+  /*if (seqState == !lastSeqState)
   {
     Keyboard.begin();
 
@@ -70,7 +71,7 @@ void loop() {
     Keyboard.releaseAll();
 
     Keyboard.end();
-  }
+  }*/
 }
 
 void buttonInput()
@@ -107,10 +108,6 @@ void serialInputUser() {
     }
   }
 
-  Wire.beginTransmission(1);
-  Wire.write(userUser.c_str());
-  Wire.endTransmission();
-
   Serial.print("Please enter your Password: ");
 
   while (userPass == "") {
@@ -124,6 +121,10 @@ void serialInputUser() {
       Serial.println(userPass);
     }
   }
+
+  Wire.beginTransmission(1);
+  Wire.write(userUser.c_str());
+  Wire.endTransmission();
 
   Wire.beginTransmission(1);
   Wire.write(userPass.c_str());
