@@ -1,0 +1,134 @@
+/*
+  Name:    LoginThingy.ino
+  Created: 1/21/2019 11:35:40 PM
+  Author:  nickwaUsername aPassword
+  
+*/
+
+
+
+#include <Keyboard.h>
+#include <Wire.h>
+
+#define buttonPin 2
+
+int lastButtonState;
+int buttonState;
+int seqState;
+int lastSeqState;
+
+int waitLen = 10;
+
+char tabKey = KEY_TAB;
+char entKey = KEY_RETURN;
+
+String userUser = "";
+String userPass = "";
+
+// the setup function runs once when you press reset or power the board
+void setup() {
+
+  Serial.begin(9600);
+  Wire.begin();
+
+  seqState = 0;         // Sequence starts on the OFF position
+  lastButtonState = 0;  // Initialize to NOT pressed
+
+  delay(2000);
+
+  //Serial.print("Change credentials (Y/N)?");
+
+  //if (Serial.readStringUntil(2000).equalsIgnoreCase("y"))
+  //{
+  while ((userUser == "") || (userPass == ""))
+  {
+    serialInputUser();
+  }
+  //}
+}
+
+// the loop function runs over and over again until power down or reset
+void loop() {
+
+  lastSeqState = seqState;
+
+  buttonInput();
+
+  /*if (seqState == !lastSeqState)
+  {
+    Keyboard.begin();
+
+    Keyboard.print(userUser);
+
+    Keyboard.press(tabKey);
+    Keyboard.release(tabKey);
+
+    Keyboard.print(userPass);
+
+    Keyboard.press(entKey);
+    Keyboard.release(entKey);
+
+    Keyboard.releaseAll();
+
+    Keyboard.end();
+  }*/
+}
+
+void buttonInput()
+{
+  long int buttonMillis = millis();
+  long int buttonWait = 1;
+
+  while ((millis() - buttonMillis) <= buttonWait)
+  {
+    buttonState = digitalRead(buttonPin);
+
+    if ((buttonState == HIGH) && (lastButtonState == LOW)) // Check to see if button is down
+    {
+      seqState = !seqState; // Update sequence running state
+    }
+
+    lastButtonState = buttonState;                         // remember last buttonState
+  }
+}
+
+void serialInputUser() {
+
+  Serial.print("Please enter your Username: ");
+
+  while (userUser == "") {
+    if (Serial.available() > 0) { //recieves data only if it can be recieved
+
+      userUser = Serial.readString(); //recieves user input
+
+      Serial.println(userUser);
+
+
+
+    }
+  }
+
+  Serial.print("Please enter your Password: ");
+
+  while (userPass == "") {
+    if (Serial.available() > 0) { //recieves data only if it can be recieved
+
+
+      userPass = Serial.readString(); //recieves user input
+
+
+
+      Serial.println(userPass);
+    }
+  }
+
+  Wire.beginTransmission(1);
+  Wire.write(userUser.c_str());
+  Wire.endTransmission();
+
+  Wire.beginTransmission(1);
+  Wire.write(userPass.c_str());
+  Wire.endTransmission();
+
+  Serial.end();
+}

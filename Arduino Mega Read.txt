@@ -1,0 +1,31 @@
+#include <EEPROM.h>
+
+struct userCredConst {
+  String usersUsername;
+  String usersPassword;
+};
+
+int credAdd = 0;
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  Serial.println("Starting up");
+
+  char userTest[40];
+  char passTest[40];
+  credAdd = 0;
+
+  EEPROM.get(credAdd, userTest);
+  credAdd += sizeof(userTest);
+  EEPROM.get(credAdd, passTest);
+
+  Serial.println();
+  Serial.println(userTest);
+  Serial.println(passTest);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+
+}
