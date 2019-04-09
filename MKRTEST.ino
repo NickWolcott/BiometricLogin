@@ -12,6 +12,8 @@ int waitLen = 10;
 char tabKey = KEY_TAB;
 char entKey = KEY_RETURN;
 
+
+
 char abuffer[99];
 boolean receiveFlag = false;
 String userbuffer[5];
@@ -19,12 +21,16 @@ String userbuffer[5];
 char aUsername[99];
 char aPassword[99];
 
+char oldUser[99];
+char oldPass[99];
+
 int i = 0;
 int a = 0;
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
+  
   startReceive();
 
   seqState = 0;         // Sequence starts on the OFF position
@@ -36,46 +42,15 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
-  if (a == 2) {
+  /*if (a == 2) {
     digitalWrite(4, HIGH);
   }
 
   lastSeqState = seqState;
 
-  buttonInput();
+  buttonInput();*/
 
-  if (seqState == !lastSeqState)
-  {
-    if (strlen(aUsername) <= 1) {
-      Keyboard.begin();
 
-      Keyboard.print(aPassword);
-
-      Keyboard.press(entKey);
-      Keyboard.release(entKey);
-
-      Keyboard.releaseAll();
-
-      Keyboard.end();
-    }
-    else {
-      Keyboard.begin();
-
-      Keyboard.print(aUsername);
-
-      Keyboard.press(tabKey);
-      Keyboard.release(tabKey);
-
-      Keyboard.print(aPassword);
-
-      Keyboard.press(entKey);
-      Keyboard.release(entKey);
-
-      Keyboard.releaseAll();
-
-      Keyboard.end();
-    }
-  }
 }
 
 void startReceive() {
@@ -102,22 +77,42 @@ void receiveEvent(int howMany)
   a++;
 
   if (a == 2) {
-
     strcpy(aUsername, userbuffer[0].c_str());
     strcpy(aPassword, userbuffer[1].c_str());
 
     Serial.print("Received username: ");
     Serial.println(aUsername);
+    Serial.println(strlen(aUsername));
     Serial.print("Received password: ");
     Serial.println(aPassword);
 
-   Serial.println(strlen(aUsername));
-   Serial.println(strlen(aPassword));
+    Serial.println(strlen(aUsername));
+    Serial.println(strlen(aPassword));
+  delay(1000);
+  
+  if((strcmp(aUsername, oldUser) !=0) || (strcmp(aPassword, oldPass) !=0)){
+    Serial.println("Pasting Credential[s]");
+for(int k = 0; k<=strlen(aUsername); k++)
+{
+  oldUser[k] = aUsername[k];
+}
+for(int k = 0; k<=sizeof(aPassword); k++)
+{
+  oldPass[k] = aPassword[k];
+}
+  kbOut();
+
+    memset(aUsername, 0, sizeof(aUsername));
+    memset(aPassword, 0, sizeof(aPassword));
+    memset(oldUser, 0, sizeof(oldUser));
+    memset(oldPass, 0, sizeof(oldPass));
+    a = 0;
+    i=0;
   }
 }
+}
 
-
-void buttonInput()
+/*void buttonInput()
 {
   long int buttonMillis = millis();
   long int buttonWait = 1;
@@ -133,4 +128,40 @@ void buttonInput()
 
     lastButtonState = buttonState;                         // remember last buttonState
   }
+}*/
+
+void kbOut() {
+  /*if (seqState == !lastSeqState)
+  {*/
+    if (strlen(aUsername) <= 2) {
+      Keyboard.begin();
+
+      Keyboard.print(aPassword);
+
+      Keyboard.press(entKey);
+      Keyboard.release(entKey);
+
+      Keyboard.releaseAll();
+
+      Keyboard.end();
+    }
+
+    else {
+      Keyboard.begin();
+
+      Keyboard.print(aUsername);
+
+      Keyboard.press(tabKey);
+      Keyboard.release(tabKey);
+
+      Keyboard.print(aPassword);
+
+      Keyboard.press(entKey);
+      Keyboard.release(entKey);
+
+      Keyboard.releaseAll();
+
+      Keyboard.end();
+    }
+ // }
 }

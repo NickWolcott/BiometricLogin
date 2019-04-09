@@ -28,7 +28,6 @@ void setup() {
 
   delay(500);
   fps.Open();         //send serial command to initialize fps
-  fps.SetLED(true);   //turn on LED so fps can see fingerprint
 
   long int currmil = millis();
 
@@ -48,28 +47,31 @@ void serialInputUser() {
     delay(1000);
   }
 
+Serial.flush() ;
+Serial.readString();
+
   Serial.print("Please enter your Username: ");
 
-  while (userUser == "") {
-    if (Serial.available() > 0) { //recieves data only if it can be recieved
+ // while (userUser == "") {
+   // if (Serial.available() > 0) { //recieves data only if it can be recieved
 
       userUser = Serial.readString(); //recieves user input
       strcpy(aUsername, userUser.c_str());
-
       Serial.println(userUser);
-    }
-  }
+    //}
+ // }
 
   Serial.print("Please enter your Password: ");
 
-  while (userPass == "") {
-    if (Serial.available() > 0) { //recieves data only if it can be recieved
+//  while (userPass == "") {
+   // if (Serial.available() > 0) { //recieves data only if it can be recieved
 
       userPass = Serial.readString(); //recieves user input
       strcpy(aPassword, userPass.c_str());
       Serial.println(userPass);
-    }
-  }
+   // }
+  //}
+  
   Serial.println(credAdd);
   EEPROM.put(credAdd, aUsername);
   credAdd += sizeof(aUsername);
@@ -113,6 +115,8 @@ void Enroll()
   // Enroll test
 
   // find open enroll id
+    fps.SetLED(true);   //turn on LED so fps can see fingerprint
+
   int enrollid = 0;
   bool usedid = true;
   while (usedid == true)
@@ -151,6 +155,8 @@ void Enroll()
         if (iret == 0)
         {
           Serial.println("Enrolling Successful");
+            fps.SetLED(false);   //turn on LED so fps can see fingerprint
+
           toggleEnroll = true;
 
           credAdd = 0;
@@ -208,6 +214,8 @@ void getStoredCred() {
 
 void testPrint()
 {
+    fps.SetLED(true);   //turn on LED so fps can see fingerprint
+
   // Identify fingerprint test
   if (fps.IsPressFinger())
   {
@@ -222,11 +230,13 @@ void testPrint()
       model you are using */
     if (id < 200) //<- change id value depending model you are using
     { //if the fingerprint matches, provide the matching template ID
+       fps.SetLED(false);   //turn on LED so fps can see fingerprint
+
       Serial.print("Verified ID:");
       Serial.println(id);
       credAdd = 0;
       toggleEnroll = true;
-      credAdd = (id+1) * 100;
+      credAdd = (id) * 100;
 
     }
     else
@@ -246,6 +256,8 @@ void testPrint()
 
 void testPrintCred()
 {
+    fps.SetLED(true);   //turn on LED so fps can see fingerprint
+
   // Identify fingerprint test
   if (fps.IsPressFinger())
   {
@@ -260,12 +272,14 @@ void testPrintCred()
       model you are using */
     if (id < 200) //<- change id value depending model you are using
     { //if the fingerprint matches, provide the matching template ID
+        fps.SetLED(false);   //turn on LED so fps can see fingerprint
+
       Serial.print("Verified ID:");
       Serial.println(id);
 
       credAdd = 0;
 
-      credAdd = (id+1) * 100;
+      credAdd = (id) * 100;
 
       getStoredCred();
 
