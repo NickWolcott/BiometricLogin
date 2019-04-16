@@ -2,6 +2,12 @@
 #include <Wire.h>
 #define button 2
 
+#include <SPI.h>
+#include <WiFiNINA.h>
+#include <WiFiUdp.h>
+
+#include "arduino_secrets.h"
+
 int lastButtonState;
 int buttonState;
 int seqState;
@@ -11,6 +17,7 @@ int waitLen = 10;
 
 char tabKey = KEY_TAB;
 char entKey = KEY_RETURN;
+char bckKey = KEY_BACKSPACE;
 
 
 
@@ -27,6 +34,19 @@ char oldPass[99];
 int i = 0;
 int a = 0;
 
+char ssid[] = SECRET_SSID;        // your network SSID (name)
+char pass[] = SECRET_PASS;    // your network password (use for WPA, or use as key for WEP)
+byte g_TargetMacAddress[] = MAC_ADDRESS; // the destination PC to be woken up
+
+const int nMagicPacketLength = 102;
+byte abyMagicPacket[nMagicPacketLength] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+byte abyTargetIPAddress[] = {255, 255, 255, 255};
+const int nWOLPort = 9;
+
+int status = WL_IDLE_STATUS;     // the WiFi radio's status
+
+WiFiUDP Udp;
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
@@ -37,6 +57,33 @@ void setup() {
   lastButtonState = 0;  // Initialize to NOT pressed
 
   pinMode(4, OUTPUT);
+
+
+  if (WiFi.status() == WL_NO_MODULE) {
+    Serial.println("Communication with WiFi module failed!");
+    // don't continue
+    while (true);
+  }
+
+  String fv = WiFi.firmwareVersion();
+  if (fv < "1.0.0") {
+    Serial.println("Please upgrade the firmware");
+  }
+
+  // attempt to connect to WiFi network:
+  while ( status != WL_CONNECTED) {
+    Serial.print("Attempting to connect to WPA SSID: ");
+    Serial.println(ssid);
+    // Connect to WPA/WPA2 network:
+    status = WiFi.begin(ssid, pass);
+
+    // wait 5 seconds for connection:
+    delay(5000);
+  }
+  Serial.println("You're connected to the network");
+  printCurrentNet();
+  printWiFiData();
+  
 }
 
 void loop() {
@@ -133,11 +180,20 @@ for(int k = 0; k<=sizeof(aPassword); k++)
 void kbOut() {
   /*if (seqState == !lastSeqState)
   {*/
+    sendWOLMP(g_TargetMacAddress);
+delay(8000);
     if (strlen(aUsername) <= 2) {
       Keyboard.begin();
-
+      Keyboard.print(bckKey);
+     // Keyboard.press(bckKey);
+     // Keyboard.release(bckKey);
+      //Keyboard.press(bckKey);
+      //Keyboard.release(bckKey);
+      Keyboard.print(bckKey);
+      delay(3000);
+      Keyboard.print(bckKey);
       Keyboard.print(aPassword);
-
+      delay(1000);
       Keyboard.press(entKey);
       Keyboard.release(entKey);
 
@@ -164,4 +220,74 @@ void kbOut() {
       Keyboard.end();
     }
  // }
+}
+
+void sendWOLMP(byte * pMacAddress){
+Serial.println("Sending Wake-On-Lan Magic Packet");
+
+for (int ix = 6; ix < nMagicPacketLength; ix++){
+  abyMagicPacket[ix] = pMacAddress[ix%6];
+}
+
+Udp.begin(nWOLPort);
+if(Udp.beginPacket(abyTargetIPAddress, nWOLPort)){
+  Udp.write(abyMagicPacket, nMagicPacketLength);
+  Udp.endPacket();
+}
+
+Serial.println("Wake-On-Lan Magic Packet sent");
+}
+
+void printWiFiData() {
+  // print your board's IP address:
+  IPAddress ip = WiFi.localIP();
+  Serial.print("IP address : ");
+  Serial.println(ip);
+
+  Serial.print("Subnet mask: ");
+  Serial.println((IPAddress)WiFi.subnetMask());
+
+  Serial.print("Gateway IP : ");
+  Serial.println((IPAddress)WiFi.gatewayIP());
+
+  // print your MAC address:
+  byte mac[6];
+  WiFi.macAddress(mac);
+  Serial.print("MAC address: ");
+  printMacAddress(mac);
+}
+
+void printCurrentNet() {
+  // print the SSID of the network you're attached to:
+  Serial.print("SSID: ");
+  Serial.println(WiFi.SSID());
+
+  // print the MAC address of the router you're attached to:
+  byte bssid[6];
+  WiFi.BSSID(bssid);
+  Serial.print("BSSID: ");
+  printMacAddress(bssid);
+  // print the received signal strength:
+  long rssi = WiFi.RSSI();
+  Serial.print("signal strength (RSSI): ");
+  Serial.println(rssi);
+
+  // print the encryption type:
+  byte encryption = WiFi.encryptionType();
+  Serial.print("Encryption Type: ");
+  Serial.println(encryption, HEX);
+  Serial.println();
+}
+
+void printMacAddress(byte mac[]) {
+  for (int i = 5; i >= 0; i--) {
+    if (mac[i] < 16) {
+      Serial.print("0");
+    }
+    Serial.print(mac[i], HEX);
+    if (i > 0) {
+      Serial.print(":");
+    }
+  }
+  Serial.println();
 }
