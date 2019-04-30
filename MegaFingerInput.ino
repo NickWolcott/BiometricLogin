@@ -9,8 +9,10 @@ bool toggleEnroll = false;
 
 String userUser = "";
 String userPass = "";
+String wolStr = "";
 
 char changeCred[1];
+char addCred = "";
 
 char abuffer[99];
 boolean receiveFlag = false;
@@ -18,18 +20,29 @@ String userbuffer[5];
 
 char aUsername[40];
 char aPassword[40];
+char aWol[10];
 char testUsername[40];
 char testPassword[40];
+char testWol[10];
+
+const int outPin = 4;
 
 int credAdd = 0;
 
+long int currmil = 0;
+
 void setup() {
+
+
+  pinMode(outPin, OUTPUT);
+
+
   Serial.begin(9600);
 
   delay(500);
   fps.Open();         //send serial command to initialize fps
 
-  long int currmil = millis();
+  currmil = millis();
 
   startConfig(currmil);
 }
@@ -41,64 +54,107 @@ void loop() {
 
 
 void serialInputUser() {
-
+  Serial.println("Enroll");
   while (toggleEnroll == false) {
     testPrint();          //begin enrolling fingerprint
     delay(1000);
   }
 
-Serial.flush() ;
-Serial.readString();
+  Serial.flush() ;
+  Serial.readString();
 
   Serial.print("Please enter your Username: ");
 
- // while (userUser == "") {
-   // if (Serial.available() > 0) { //recieves data only if it can be recieved
+  //while (userUser == "") {
+  //if (Serial.available() > 0) { //recieves data only if it can be recieved
 
-      userUser = Serial.readString(); //recieves user input
-      strcpy(aUsername, userUser.c_str());
-      Serial.println(userUser);
-    //}
- // }
+  userUser = Serial.readString(); //recieves user input
+  strcpy(aUsername, userUser.c_str());
+  Serial.println(userUser);
+  delay(500);
+  Serial.flush() ;
+  //}
+  // }
 
   Serial.print("Please enter your Password: ");
 
-//  while (userPass == "") {
-   // if (Serial.available() > 0) { //recieves data only if it can be recieved
+  //  while (userPass == "") {
+  // if (Serial.available() > 0) { //recieves data only if it can be recieved
 
-      userPass = Serial.readString(); //recieves user input
-      strcpy(aPassword, userPass.c_str());
-      Serial.println(userPass);
-   // }
+  userPass = Serial.readString(); //recieves user input
+  strcpy(aPassword, userPass.c_str());
+  Serial.println(userPass);
+  delay(500);
+  Serial.flush() ;
+  // }
+  // }
+
+  //while (wolStr == "") {
+  // if (Serial.available() > 0) { //recieves data only if it can be recieved
+
+  Serial.print("Is this a windows login credetial (Y/N)? ");
+  wolStr = Serial.readString(); //recieves user input
+  strcpy(aWol, wolStr.c_str());
+  Serial.println(wolStr);
+  delay(500);
+  Serial.flush() ;
   //}
-  
-  Serial.println(credAdd);
-  EEPROM.put(credAdd, aUsername);
-  credAdd += sizeof(aUsername);
-  Serial.println(sizeof(testUsername));
-  Serial.println(credAdd);
-  EEPROM.put(credAdd, aPassword);
+  //}
 
-  Serial.println("Your username is ");
-  Serial.print(aUsername);
-  Serial.println("Your password is ");
-  Serial.print(aPassword);
+  Serial.println(credAdd);
+  Serial.println(sizeof(aUsername));
+  EEPROM.put(credAdd, aUsername);
+  credAdd += (sizeof(aUsername) + 1);
+
+  Serial.println(credAdd);
+  Serial.println(sizeof(aPassword));
+  EEPROM.put(credAdd, aPassword);
+  credAdd += (sizeof(aPassword) + 1);
+
+  Serial.println(credAdd);
+  EEPROM.put(credAdd, aWol);
+
+  Serial.print("Your username is: ");
+  Serial.println(aUsername);
+  Serial.print("Your password is: ");
+  Serial.println(aPassword);
+  Serial.print("Is a windows credential: ");
+  Serial.println(aWol);
+
+  currmil = millis();
+
+  startConfig(currmil);
 }
 
 
 void startConfig(long int currmil) {
+  changeCred[0] = 'n';
+
+  Serial.println(String(changeCred));
+  userUser = "";
+  userPass = "";
+
   while (millis() - currmil < 5000) {
     if (Serial) {
-      Serial.println("Change credentials (Y/N)?");
 
+
+      Serial.print("Change credentials (Y/N)?");
       Serial.setTimeout(5000);
 
       Serial.readBytes(changeCred, 1);
 
-      if (String(changeCred).equalsIgnoreCase("Y"))
+      Serial.println(changeCred[0]);
+
+      Serial.println(String(changeCred[0]));
+      if (String(changeCred[0]).equalsIgnoreCase("Y") == true)
       {
-        while ((userUser == "") || (userPass == ""))
+        Serial.println("ChangeCred");
+        toggleEnroll = false;
+
+        // while (userPass == "")
+        if ((userUser == "") || (userPass == ""))
         {
+          Serial.println("Goto Enroll");
           serialInputUser();
         }
       }
@@ -115,7 +171,7 @@ void Enroll()
   // Enroll test
 
   // find open enroll id
-    fps.SetLED(true);   //turn on LED so fps can see fingerprint
+  fps.SetLED(true);   //turn on LED so fps can see fingerprint
 
   int enrollid = 0;
   bool usedid = true;
@@ -155,13 +211,13 @@ void Enroll()
         if (iret == 0)
         {
           Serial.println("Enrolling Successful");
-            fps.SetLED(false);   //turn on LED so fps can see fingerprint
+          fps.SetLED(false);   //turn on LED so fps can see fingerprint
 
           toggleEnroll = true;
 
           credAdd = 0;
 
-          credAdd = (enrollid+1) * 100;
+          credAdd = (enrollid + 1) * 100;
         }
         else
         {
@@ -184,6 +240,14 @@ void startSend() {
 }
 
 void sendEvent() {
+
+  if(String(testWol[0]).equalsIgnoreCase("Y") == true ){
+  digitalWrite(outPin, HIGH);
+  }
+  else{
+    digitalWrite(outPin, LOW);
+  }
+
   Wire.beginTransmission(1);
   Serial.print("Sending username: ");
   Serial.println(testUsername);
@@ -204,17 +268,24 @@ void getStoredCred() {
   EEPROM.get(credAdd, testUsername);
   Serial.print("Retreived username: ");
   Serial.println(testUsername);
-  credAdd += sizeof(testUsername);
+  credAdd += (sizeof(testUsername) + 1);
   Serial.println(sizeof(testUsername));
   Serial.println(credAdd);
   EEPROM.get(credAdd, testPassword);
   Serial.print("Retreived password: ");
   Serial.println(testPassword);
+
+  credAdd += (sizeof(testPassword) + 1);
+  Serial.println(sizeof(testPassword));
+  Serial.println(credAdd);
+  EEPROM.get(credAdd, testWol);
+  Serial.print("Is a Windows logon: ");
+  Serial.println(testWol);
 }
 
 void testPrint()
 {
-    fps.SetLED(true);   //turn on LED so fps can see fingerprint
+  fps.SetLED(true);   //turn on LED so fps can see fingerprint
 
   // Identify fingerprint test
   if (fps.IsPressFinger())
@@ -230,7 +301,7 @@ void testPrint()
       model you are using */
     if (id < 200) //<- change id value depending model you are using
     { //if the fingerprint matches, provide the matching template ID
-       fps.SetLED(false);   //turn on LED so fps can see fingerprint
+      fps.SetLED(false);   //turn on LED so fps can see fingerprint
 
       Serial.print("Verified ID:");
       Serial.println(id);
@@ -256,7 +327,7 @@ void testPrint()
 
 void testPrintCred()
 {
-    fps.SetLED(true);   //turn on LED so fps can see fingerprint
+  fps.SetLED(true);   //turn on LED so fps can see fingerprint
 
   // Identify fingerprint test
   if (fps.IsPressFinger())
@@ -272,7 +343,7 @@ void testPrintCred()
       model you are using */
     if (id < 200) //<- change id value depending model you are using
     { //if the fingerprint matches, provide the matching template ID
-        fps.SetLED(false);   //turn on LED so fps can see fingerprint
+      fps.SetLED(false);   //turn on LED so fps can see fingerprint
 
       Serial.print("Verified ID:");
       Serial.println(id);
@@ -285,14 +356,15 @@ void testPrintCred()
 
       startSend();
     }
-    else
-    { //if unable to recognize
+    /*else
+      { //if unable to recognize
       Serial.println("Finger not found");
-    }
+      }
+      }
+      /*else
+      {
+      Serial.println("Please press finger");
+      }*/
+    delay(100);
   }
-  else
-  {
-    Serial.println("Please press finger");
-  }
-  delay(100);
 }

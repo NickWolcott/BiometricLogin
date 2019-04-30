@@ -15,9 +15,12 @@ int lastSeqState;
 
 int waitLen = 10;
 
-char tabKey = KEY_TAB;
+char ctrlKey = KEY_LEFT_CTRL;
+char altKey = KEY_LEFT_ALT;
+char delKey = KEY_DELETE;
 char entKey = KEY_RETURN;
-char bckKey = KEY_BACKSPACE;
+char tabKey = KEY_TAB;
+
 
 
 
@@ -47,10 +50,19 @@ int status = WL_IDLE_STATUS;     // the WiFi radio's status
 
 WiFiUDP Udp;
 
+const int ledPin =  4;      // the number of the LED pin
+const int inPin = 2;
+
 void setup() {
+
+  pinMode(ledPin, OUTPUT);
+  pinMode(inPin, INPUT);
+
+  digitalWrite(ledPin, LOW);
+
   // put your setup code here, to run once:
   Serial.begin(9600);
-  
+
   startReceive();
 
   seqState = 0;         // Sequence starts on the OFF position
@@ -83,7 +95,7 @@ void setup() {
   Serial.println("You're connected to the network");
   printCurrentNet();
   printWiFiData();
-  
+
 }
 
 void loop() {
@@ -91,11 +103,11 @@ void loop() {
 
   /*if (a == 2) {
     digitalWrite(4, HIGH);
-  }
+    }
 
-  lastSeqState = seqState;
+    lastSeqState = seqState;
 
-  buttonInput();*/
+    buttonInput();*/
 
 
 }
@@ -128,114 +140,104 @@ void receiveEvent(int howMany)
     strcpy(aPassword, userbuffer[1].c_str());
 
     Serial.print("Received username: ");
+    Serial.println(userbuffer[0].c_str());
     Serial.println(aUsername);
     Serial.println(strlen(aUsername));
     Serial.print("Received password: ");
+    Serial.println(userbuffer[1].c_str());
     Serial.println(aPassword);
+    Serial.println(strlen(aPassword));
 
     Serial.println(strlen(aUsername));
     Serial.println(strlen(aPassword));
-  delay(1000);
-  
-  if((strcmp(aUsername, oldUser) !=0) || (strcmp(aPassword, oldPass) !=0)){
-    Serial.println("Pasting Credential[s]");
-for(int k = 0; k<=strlen(aUsername); k++)
-{
-  oldUser[k] = aUsername[k];
-}
-for(int k = 0; k<=sizeof(aPassword); k++)
-{
-  oldPass[k] = aPassword[k];
-}
-  kbOut();
 
-    memset(aUsername, 0, sizeof(aUsername));
-    memset(aPassword, 0, sizeof(aPassword));
-    memset(oldUser, 0, sizeof(oldUser));
-    memset(oldPass, 0, sizeof(oldPass));
-    a = 0;
-    i=0;
-  }
-}
-}
+    aUsername[strlen(aUsername) - 1] = 0;
+    aPassword[strlen(aPassword) - 1] = 0;
 
-/*void buttonInput()
-{
-  long int buttonMillis = millis();
-  long int buttonWait = 1;
+    delay(1000);
 
-  while ((millis() - buttonMillis) <= buttonWait)
-  {
-    buttonState = digitalRead(button);
-
-    if ((buttonState == HIGH) && (lastButtonState == LOW)) // Check to see if button is down
-    {
-      seqState = !seqState; // Update sequence running state
+    if ((strcmp(aUsername, oldUser) != 0) || (strcmp(aPassword, oldPass) != 0)) {
+      Serial.println("Pasting Credential[s]");
+      for (int k = 0; k <= strlen(aUsername); k++)
+      {
+        oldUser[k] = aUsername[k];
+      }
+      for (int k = 0; k <= strlen(aPassword); k++)
+      {
+        oldPass[k] = aPassword[k];
+      }
+      kbOut();
+      delay(500);
+      memset(aUsername, 0, sizeof(aUsername));
+      memset(aPassword, 0, sizeof(aPassword));
+      memset(oldUser, 0, sizeof(oldUser));
+      memset(oldPass, 0, sizeof(oldPass));
+      a = 0;
+      i = 0;
     }
-
-    lastButtonState = buttonState;                         // remember last buttonState
   }
-}*/
+}
+
 
 void kbOut() {
   /*if (seqState == !lastSeqState)
-  {*/
+    {*/
+  if (digitalRead(inPin) == HIGH) {
     sendWOLMP(g_TargetMacAddress);
-delay(8000);
-    if (strlen(aUsername) <= 2) {
-      Keyboard.begin();
-      Keyboard.print(bckKey);
-     // Keyboard.press(bckKey);
-     // Keyboard.release(bckKey);
-      //Keyboard.press(bckKey);
-      //Keyboard.release(bckKey);
-      Keyboard.print(bckKey);
-      delay(3000);
-      Keyboard.print(bckKey);
-      Keyboard.print(aPassword);
-      delay(1000);
-      Keyboard.press(entKey);
-      Keyboard.release(entKey);
+    delay(10000);
+  }
 
-      Keyboard.releaseAll();
+  if (strlen(aUsername) <= 2) {
+    Keyboard.begin();
+    Keyboard.press(ctrlKey);
+    Keyboard.press(altKey);
+    Keyboard.press(delKey);
+    Keyboard.releaseAll();
+    delay(5000);
+    Keyboard.print(aPassword);
+    delay(1000);
+    Keyboard.press(entKey);
+    Keyboard.release(entKey);
 
-      Keyboard.end();
-    }
+    Keyboard.releaseAll();
 
-    else {
-      Keyboard.begin();
+    Keyboard.end();
+  }
 
-      Keyboard.print(aUsername);
+  else {
+    Keyboard.begin();
 
-      Keyboard.press(tabKey);
-      Keyboard.release(tabKey);
+    Keyboard.print(aUsername);
 
-      Keyboard.print(aPassword);
+    Keyboard.press(tabKey);
+    Keyboard.release(tabKey);
 
-      Keyboard.press(entKey);
-      Keyboard.release(entKey);
+    Keyboard.print(aPassword);
 
-      Keyboard.releaseAll();
+    Keyboard.press(entKey);
+    Keyboard.release(entKey);
 
-      Keyboard.end();
-    }
- // }
+    Keyboard.releaseAll();
+
+    Keyboard.end();
+  }
+  // }
 }
 
-void sendWOLMP(byte * pMacAddress){
-Serial.println("Sending Wake-On-Lan Magic Packet");
+void sendWOLMP(byte * pMacAddress) {
+  Serial.println("Sending Wake-On-Lan Magic Packet");
 
-for (int ix = 6; ix < nMagicPacketLength; ix++){
-  abyMagicPacket[ix] = pMacAddress[ix%6];
-}
+  for (int ix = 6; ix < nMagicPacketLength; ix++) {
+    abyMagicPacket[ix] = pMacAddress[ix % 6];
+  }
 
-Udp.begin(nWOLPort);
-if(Udp.beginPacket(abyTargetIPAddress, nWOLPort)){
-  Udp.write(abyMagicPacket, nMagicPacketLength);
-  Udp.endPacket();
-}
+  Udp.begin(nWOLPort);
+  if (Udp.beginPacket(abyTargetIPAddress, nWOLPort)) {
+    Udp.write(abyMagicPacket, nMagicPacketLength);
+    Udp.endPacket();
+  }
 
-Serial.println("Wake-On-Lan Magic Packet sent");
+  Serial.println("Wake-On-Lan Magic Packet sent");
 }
 
 void printWiFiData() {
